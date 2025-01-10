@@ -301,40 +301,48 @@ function isSafariBrowser() {
     return /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || /iPad|iPhone|iPod/.test(navigator.userAgent);
 }
 
-// Zapisz jako...
+// Zapisz jako...  
 document.getElementById('saveAsBtn').addEventListener('click', function() {
     const editorContainer = document.getElementById('editorContainer');
-    const renderFunction = isSafariBrowser() ? htmlToImage : domtoimage;
+    
+    // Dodajemy logi do debugowania
+    console.log('Start renderowania');
+    console.log('Container dimensions:', editorContainer.offsetWidth, editorContainer.offsetHeight);
+    console.log('Images loaded:', 
+        document.getElementById('mainImage').complete,
+        document.getElementById('overlayImage').complete
+    );
 
-    renderFunction.toJpeg(editorContainer, {
-        quality: 0.95,
-        backgroundColor: 'white'
+    domtoimage.toBlob(editorContainer, {
+        quality: 1,
+        bgcolor: '#fff',
+        style: {
+            'transform': 'none',
+            'transform-origin': 'center'
+        },
+        imagePlaceholder: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDABQODxIPDRQSEBIXFRQdHx4eHRoaHSQtJSAyVC08MTAwMTQ7QVhCSThjOUFTRUZGSVlYXV5dQEVxZF9JdVtlaWv/2wBDARUXFyAeIBwgIGtrRTpFa2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2v/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='
     })
-    .then(function(dataUrl) {
-        const date = new Date();
-        const timestamp = date.getFullYear() + 
-                         ('0' + (date.getMonth()+1)).slice(-2) + 
-                         ('0' + date.getDate()).slice(-2) + '_' +
-                         ('0' + date.getHours()).slice(-2) + 
-                         ('0' + date.getMinutes()).slice(-2);
-        const filename = 'Sklejka_' + timestamp + '.jpg';
+    .then(function(blob) {
+        const filename = 'sklejka.jpg';  // Uproszczona nazwa
         
-        if (isSafariBrowser()) {
-            // Specjalna obsługa dla Safari/iOS
-            window.location.href = dataUrl.replace('image/jpeg', 'image/octet-stream');
-        } else {
-            const link = document.createElement('a');
-            link.download = filename;
-            link.href = dataUrl;
-            link.click();
-        }
+        // Metoda 1: Używamy URL.createObjectURL
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        console.log('Zapis zakończony');
     })
     .catch(function(error) {
         console.error('Błąd podczas zapisywania:', error);
-        alert('Wystąpił błąd podczas zapisywania zdjęcia. Spróbuj użyć innej przeglądarki.');
+        console.error('Stack:', error.stack);
+        alert('Wystąpił błąd podczas zapisywania zdjęcia. Sprawdź konsolę.');
     });
 });
-
 // Kopiuj do schowka
 document.getElementById('copyToClipboardBtn').addEventListener('click', function() {
     const editorContainer = document.getElementById('editorContainer');
