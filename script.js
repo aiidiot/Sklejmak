@@ -302,89 +302,36 @@ function isSafariBrowser() {
 }
 
 // Zapisz jako...  
-document.getElementById('saveAsBtn').addEventListener('click', async function() {
+document.getElementById('saveAsBtn').addEventListener('click', function() {
     const editorContainer = document.getElementById('editorContainer');
-    const mainImage = document.getElementById('mainImage');
-    const overlayImage = document.getElementById('overlayImage');
-
-    console.log('Start procesu zapisu');
-    console.log('Status zdjęć:', {
-        mainImage: mainImage.complete,
-        mainImageSrc: mainImage.src.substring(0, 50) + '...',
-        overlayImage: overlayImage.complete,
-        overlayImageSrc: overlayImage.src.substring(0, 50) + '...'
-    });
-
-    // Czekamy na załadowanie obu zdjęć
-    const waitForImages = () => {
-        return new Promise((resolve) => {
-            let mainReady = mainImage.complete;
-            let overlayReady = overlayImage.complete;
-
-            if (mainReady && overlayReady) {
-                console.log('Zdjęcia już załadowane');
-                resolve();
-                return;
-            }
-
-            mainImage.onload = function() {
-                mainReady = true;
-                if (overlayReady) resolve();
-            };
-
-            overlayImage.onload = function() {
-                overlayReady = true;
-                if (mainReady) resolve();
-            };
-
-            // Timeout na wypadek problemów z ładowaniem
-            setTimeout(resolve, 3000);
-        });
-    };
-
-    try {
-        await waitForImages();
-        console.log('Zdjęcia załadowane, rozpoczynam render');
-
-        const blob = await domtoimage.toBlob(editorContainer, {
-            quality: 0.95,
+    
+    // Dodajemy setTimeout
+    setTimeout(() => {
+        domtoimage.toBlob(editorContainer, {
+            quality: 1,
             bgcolor: '#fff',
-            cacheBust: true, // Ważne: wymusza przeładowanie zdjęć
-            imagePlaceholder: undefined, // Wyłączamy placeholder
-            style: {
-                'transform': 'none'
-            }
-        });
-
-        const filename = `Sklejka_${new Date().toISOString().slice(0,19).replace(/[:-]/g,'')}.jpg`;
-
-        if (/iPad|iPhone|iPod|Safari/.test(navigator.userAgent)) {
-            // iOS/Safari
-            const reader = new FileReader();
-            reader.onload = function() {
-                const link = document.createElement('a');
-                link.download = filename;
-                link.href = reader.result;
-                document.body.appendChild(link);
-                link.click();
-                setTimeout(() => document.body.removeChild(link), 100);
-            };
-            reader.readAsDataURL(blob);
-        } else {
-            // Inne przeglądarki
+        })
+        .then(function(blob) {
+            const date = new Date();
+            const timestamp = date.getFullYear() + 
+                         ('0' + (date.getMonth()+1)).slice(-2) + 
+                         ('0' + date.getDate()).slice(-2) + '_' +
+                         ('0' + date.getHours()).slice(-2) + 
+                         ('0' + date.getMinutes()).slice(-2);
+            const filename = 'Sklejka_' + timestamp + '.jpg';
+            
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.download = filename;
             link.href = url;
-            document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
             URL.revokeObjectURL(url);
-        }
-    } catch (error) {
-        console.error('Błąd:', error);
-        alert('Wystąpił błąd podczas zapisywania. Sprawdź konsolę.');
-    }
+        })
+        .catch(function(error) {
+            console.error('Błąd podczas zapisywania:', error);
+            alert('Wystąpił błąd podczas zapisywania zdjęcia.');
+        });
+    }, 500); // 500ms opóźnienia
 });
 // Kopiuj do schowka
 document.getElementById('copyToClipboardBtn').addEventListener('click', function() {
