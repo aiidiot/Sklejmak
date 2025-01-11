@@ -305,42 +305,67 @@ function isSafariBrowser() {
 document.getElementById('saveAsBtn').addEventListener('click', function() {
     const editorContainer = document.getElementById('editorContainer');
     
-    // Dodajemy logi do debugowania
-    console.log('Start renderowania');
-    console.log('Container dimensions:', editorContainer.offsetWidth, editorContainer.offsetHeight);
-    console.log('Images loaded:', 
-        document.getElementById('mainImage').complete,
-        document.getElementById('overlayImage').complete
-    );
+    console.log('Rozpoczynam proces zapisu');
+
+    // Generowanie nazwy pliku
+    const date = new Date();
+    const timestamp = date.getFullYear() + 
+                     ('0' + (date.getMonth()+1)).slice(-2) + 
+                     ('0' + date.getDate()).slice(-2) + '_' +
+                     ('0' + date.getHours()).slice(-2) + 
+                     ('0' + date.getMinutes()).slice(-2);
+    const filename = `Sklejka_${timestamp}.jpg`;
 
     domtoimage.toBlob(editorContainer, {
-        quality: 1,
-        bgcolor: '#fff',
-        style: {
-            'transform': 'none',
-            'transform-origin': 'center'
-        },
-        imagePlaceholder: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDABQODxIPDRQSEBIXFRQdHx4eHRoaHSQtJSAyVC08MTAwMTQ7QVhCSThjOUFTRUZGSVlYXV5dQEVxZF9JdVtlaWv/2wBDARUXFyAeIBwgIGtrRTpFa2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2v/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='
+        quality: 0.95,
+        bgcolor: '#fff'
     })
     .then(function(blob) {
-        const filename = 'sklejka.jpg';  // Uproszczona nazwa
+        // Tworzenie nowego blob z właściwym typem MIME
+        const newBlob = new Blob([blob], {type: 'image/jpeg'});
         
-        // Metoda 1: Używamy URL.createObjectURL
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = filename;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        // Dla iOS/Safari
+        if (/iPad|iPhone|iPod|Safari/.test(navigator.userAgent) && !navigator.standalone) {
+            console.log('Wykryto iOS/Safari - używam alternatywnej metody zapisu');
+            
+            // Konwersja blob do base64
+            const reader = new FileReader();
+            reader.onload = function() {
+                const dataUrl = reader.result;
+                
+                // Tworzenie tymczasowego linku z wymuszonym typem i nazwą
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = dataUrl;
+                link.type = 'image/jpeg';
+                
+                // Dodanie do dokumentu i symulacja kliknięcia
+                document.body.appendChild(link);
+                link.click();
+                
+                // Czyszczenie
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                }, 100);
+            };
+            reader.readAsDataURL(newBlob);
+        } else {
+            // Dla innych przeglądarek
+            const url = window.URL.createObjectURL(newBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }
         
-        console.log('Zapis zakończony');
+        console.log('Zapis zakończony, nazwa pliku:', filename);
     })
     .catch(function(error) {
         console.error('Błąd podczas zapisywania:', error);
-        console.error('Stack:', error.stack);
-        alert('Wystąpił błąd podczas zapisywania zdjęcia. Sprawdź konsolę.');
+        alert('Wystąpił błąd podczas zapisywania zdjęcia.');
     });
 });
 // Kopiuj do schowka
