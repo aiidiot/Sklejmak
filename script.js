@@ -393,7 +393,6 @@ document.getElementById('copyToClipboardBtn').addEventListener('click', function
 });
 
 
-
 // Wczytywanie szablonu
 document.getElementById('loadTemplateBtn').addEventListener('click', function() {
     const templateName = document.getElementById('templateSelect').value;
