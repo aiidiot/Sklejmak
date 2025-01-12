@@ -350,7 +350,10 @@ function renderImage() {
 }
 
 // Zapisz jako...
-document.getElementById('saveAsBtn').addEventListener('click', renderImage);
+document.getElementById('saveAsBtn').addEventListener('click', function() {
+    console.log('Kliknięto przycisk "Zapisz jako...".');
+    renderImage();
+});
 
 // Kopiuj do schowka
 document.getElementById('copyToClipboardBtn').addEventListener('click', function() {
@@ -391,6 +394,7 @@ document.getElementById('copyToClipboardBtn').addEventListener('click', function
         });
     }, 1000); // Opóźnienie 1 sekundy
 });
+
 
 
 // Wczytywanie szablonu
