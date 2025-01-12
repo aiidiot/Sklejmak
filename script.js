@@ -308,6 +308,8 @@ function applySettings(settings) {
 // Funkcja renderowania obrazu
 function renderImage() {
     const editorContainer = document.getElementById('editorContainer');
+    const mainImage = document.getElementById('mainImage');
+    const overlayImage = document.getElementById('overlayImage');
     
     // Sprawdź, czy obrazy są załadowane
     if (!mainImage.complete || !overlayImage.complete) {
@@ -315,6 +317,8 @@ function renderImage() {
         alert('Obrazy nie są załadowane. Spróbuj ponownie.');
         return;
     }
+
+    console.log('Obrazy są załadowane. Rozpoczynam renderowanie.');
 
     // Dodaj opóźnienie, aby upewnić się, że obrazy są w pełni załadowane
     setTimeout(() => {
@@ -336,6 +340,8 @@ function renderImage() {
             link.download = filename;
             link.href = dataUrl;
             link.click();
+
+            console.log('Renderowanie zakończone pomyślnie.');
         }).catch(function(error) {
             console.error('Błąd podczas zapisywania:', error);
             alert('Wystąpił błąd podczas zapisywania zdjęcia.');
@@ -349,6 +355,8 @@ document.getElementById('saveAsBtn').addEventListener('click', renderImage);
 // Kopiuj do schowka
 document.getElementById('copyToClipboardBtn').addEventListener('click', function() {
     const editorContainer = document.getElementById('editorContainer');
+    const mainImage = document.getElementById('mainImage');
+    const overlayImage = document.getElementById('overlayImage');
     
     // Sprawdź, czy obrazy są załadowane
     if (!mainImage.complete || !overlayImage.complete) {
@@ -356,6 +364,8 @@ document.getElementById('copyToClipboardBtn').addEventListener('click', function
         alert('Obrazy nie są załadowane. Spróbuj ponownie.');
         return;
     }
+
+    console.log('Obrazy są załadowane. Rozpoczynam renderowanie.');
 
     // Dodaj opóźnienie, aby upewnić się, że obrazy są w pełni załadowane
     setTimeout(() => {
@@ -369,6 +379,7 @@ document.getElementById('copyToClipboardBtn').addEventListener('click', function
                     const item = new ClipboardItem({ 'image/png': blob });
                     await navigator.clipboard.write([item]);
                     alert('Skopiowano do schowka! Możesz teraz wkleić obraz w dowolnym programie graficznym.');
+                    console.log('Renderowanie zakończone pomyślnie.');
                 } catch(err) {
                     console.error('Błąd kopiowania do schowka:', err);
                     alert('Nie udało się skopiować do schowka. Spróbuj użyć przycisku "Zapisz jako..."');
@@ -380,6 +391,7 @@ document.getElementById('copyToClipboardBtn').addEventListener('click', function
         });
     }, 1000); // Opóźnienie 1 sekundy
 });
+
 
 
 // Wczytywanie szablonu
