@@ -4,7 +4,8 @@ let overlayStartX, overlayStartY;
 let mainImageOffset = { x: 0, y: 0 };  
 let mainImageScale = 1;  
 let overlayImageScale = 1;  
-  
+let overlayRotation = 0; // Dodane dla funkcji obracania
+
 // Elementy DOM  
 const overlayContainer = document.getElementById('overlayContainer');  
 const mainImage = document.getElementById('mainImage');  
@@ -154,8 +155,8 @@ document.getElementById('shadowToggle').addEventListener('change', function(e) {
    } else {  
       shadow.style.display = 'none';  
    }  
-});  
-  
+});
+
 // Funkcja aktualizacji cienia  
 function updateShadow() {  
    const overlay = document.getElementById('overlayContainer');  
@@ -187,7 +188,15 @@ document.querySelectorAll('[data-shape]').forEach(btn => {
         overlayContainer.classList.add('square');  
         overlayContainer.classList.remove('circle');  
         shadow.style.borderRadius = '0';  
-      }  
+      } else if (shape === 'sklejka') {
+        overlayContainer.classList.add('sklejka');
+        overlayContainer.style.width = '50%';
+        overlayContainer.style.height = '100%';
+        overlayContainer.style.left = '0';
+        overlayContainer.style.top = '0';
+        overlayContainer.style.transform = `rotate(${overlayRotation}deg)`;
+      }
+      updateShadow();
    });  
 });  
   
@@ -195,7 +204,7 @@ document.querySelectorAll('[data-shape]').forEach(btn => {
 document.getElementById('autoFitBtn').addEventListener('click', function() {  
    mainImageOffset = { x: 0, y: 0 };  
    mainImageScale = 1;  
-   document.getElementById('mainImageScale').value = 100;  
+     document.getElementById('mainImageScale').value = 100;  
    mainImage.style.width = '100%';  
    mainImage.style.height = '100%';  
    mainImage.style.objectFit = 'contain';  
@@ -296,73 +305,82 @@ function applySettings(settings) {
     updateShadow();
 }
 
-// Funkcja pomocnicza do wykrywania Safari/iOS
-function isSafariBrowser() {
-    return /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || /iPad|iPhone|iPod/.test(navigator.userAgent);
-}
-
-// Zapisz jako...  
-document.getElementById('saveAsBtn').addEventListener('click', function() {
+// Funkcja renderowania obrazu
+function renderImage() {
     const editorContainer = document.getElementById('editorContainer');
     
-    // Dodajemy setTimeout
+    // Sprawdź, czy obrazy są załadowane
+    if (!mainImage.complete || !overlayImage.complete) {
+        console.error('Obrazy nie są załadowane.');
+        alert('Obrazy nie są załadowane. Spróbuj ponownie.');
+        return;
+    }
+
+    // Dodaj opóźnienie, aby upewnić się, że obrazy są w pełni załadowane
     setTimeout(() => {
-        domtoimage.toBlob(editorContainer, {
-            quality: 1,
-            bgcolor: '#fff',
-        })
-        .then(function(blob) {
+        html2canvas(editorContainer, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#fff'
+        }).then(function(canvas) {
+            const dataUrl = canvas.toDataURL('image/png');
             const date = new Date();
             const timestamp = date.getFullYear() + 
-                         ('0' + (date.getMonth()+1)).slice(-2) + 
-                         ('0' + date.getDate()).slice(-2) + '_' +
-                         ('0' + date.getHours()).slice(-2) + 
-                         ('0' + date.getMinutes()).slice(-2);
-            const filename = 'Sklejka_' + timestamp + '.jpg';
+                             ('0' + (date.getMonth()+1)).slice(-2) + 
+                             ('0' + date.getDate()).slice(-2) + '_' +
+                             ('0' + date.getHours()).slice(-2) + 
+                             ('0' + date.getMinutes()).slice(-2);
+            const filename = 'Sklejka_' + timestamp + '.png';
             
-            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.download = filename;
-            link.href = url;
+            link.href = dataUrl;
             link.click();
-            URL.revokeObjectURL(url);
-        })
-        .catch(function(error) {
+        }).catch(function(error) {
             console.error('Błąd podczas zapisywania:', error);
             alert('Wystąpił błąd podczas zapisywania zdjęcia.');
         });
-    }, 500); // 500ms opóźnienia
-});
+    }, 1000); // Opóźnienie 1 sekundy
+}
+
+// Zapisz jako...
+document.getElementById('saveAsBtn').addEventListener('click', renderImage);
+
 // Kopiuj do schowka
 document.getElementById('copyToClipboardBtn').addEventListener('click', function() {
     const editorContainer = document.getElementById('editorContainer');
-    const renderFunction = isSafariBrowser() ? htmlToImage : domtoimage;
+    
+    // Sprawdź, czy obrazy są załadowane
+    if (!mainImage.complete || !overlayImage.complete) {
+        console.error('Obrazy nie są załadowane.');
+        alert('Obrazy nie są załadowane. Spróbuj ponownie.');
+        return;
+    }
 
-    renderFunction.toJpeg(editorContainer, {
-        quality: 0.95,
-        backgroundColor: 'white'
-    })
-    .then(async function(dataUrl) {
-        try {
-            const response = await fetch(dataUrl);
-            const blob = await response.blob();
-            const item = new ClipboardItem({ 'image/jpeg': blob });
-            await navigator.clipboard.write([item]);
-            alert('Skopiowano do schowka! Możesz teraz wkleić obraz w dowolnym programie graficznym.');
-        } catch(err) {
-            console.error('Błąd kopiowania do schowka:', err);
-            if (isSafariBrowser()) {
-                alert('Kopiowanie do schowka nie jest wspierane w Safari/iOS. Użyj przycisku "Zapisz".');
-            } else {
-                alert('Nie udało się skopiować do schowka. Spróbuj użyć przycisku "Zapisz jako..."');
-            }
-        }
-    })
-    .catch(function(error) {
-        console.error('Błąd podczas tworzenia obrazu:', error);
-        alert('Wystąpił błąd podczas kopiowania do schowka.');
-    });
+    // Dodaj opóźnienie, aby upewnić się, że obrazy są w pełni załadowane
+    setTimeout(() => {
+        html2canvas(editorContainer, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#fff'
+        }).then(function(canvas) {
+            canvas.toBlob(async function(blob) {
+                try {
+                    const item = new ClipboardItem({ 'image/png': blob });
+                    await navigator.clipboard.write([item]);
+                    alert('Skopiowano do schowka! Możesz teraz wkleić obraz w dowolnym programie graficznym.');
+                } catch(err) {
+                    console.error('Błąd kopiowania do schowka:', err);
+                    alert('Nie udało się skopiować do schowka. Spróbuj użyć przycisku "Zapisz jako..."');
+                }
+            });
+        }).catch(function(error) {
+            console.error('Błąd podczas tworzenia obrazu:', error);
+            alert('Wystąpił błąd podczas kopiowania do schowka.');
+        });
+    }, 1000); // Opóźnienie 1 sekundy
 });
+
 
 // Wczytywanie szablonu
 document.getElementById('loadTemplateBtn').addEventListener('click', function() {
@@ -420,7 +438,7 @@ document.getElementById('deleteTemplateBtn').addEventListener('click', function(
     }
 });
 
-/// Przy starcie strony
+// Przy starcie strony
 window.addEventListener('DOMContentLoaded', function() {
     // Załaduj zapisane szablony do selecta
     loadSavedTemplates();
@@ -430,4 +448,59 @@ window.addEventListener('DOMContentLoaded', function() {
     shadow.style.display = 'block';
     updateShadow();
 });
- 
+
+// Obsługa obrotu nakładki
+document.getElementById('rotationAngle').addEventListener('input', function(e) {
+    overlayRotation = parseInt(e.target.value);
+    document.getElementById('rotationAngleInput').value = overlayRotation;
+    overlayContainer.style.transform = `rotate(${overlayRotation}deg) scale(${overlayImageScale})`;
+    shadow.style.transform = `rotate(${overlayRotation}deg)`;
+    updateShadow();
+});
+
+document.getElementById('rotationAngleInput').addEventListener('input', function(e) {
+    overlayRotation = parseInt(e.target.value);
+    document.getElementById('rotationAngle').value = overlayRotation;
+    overlayContainer.style.transform = `rotate(${overlayRotation}deg) scale(${overlayImageScale})`;
+    shadow.style.transform = `rotate(${overlayRotation}deg)`;
+    updateShadow();
+});
+
+
+
+document.getElementById('rotationAngleInput').addEventListener('input', function(e) {
+    overlayRotation = parseInt(e.target.value);
+    document.getElementById('rotationAngle').value = overlayRotation;
+    overlayImage.style.transform = `rotate(${overlayRotation}deg) scale(${overlayImageScale})`;
+    updateShadow();
+});
+
+// Obsługa funkcji "sklejka"
+document.querySelectorAll('[data-shape]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Usuń active ze wszystkich przycisków
+        document.querySelectorAll('[data-shape]').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        const shape = this.dataset.shape;
+        overlayContainer.classList.remove('circle', 'square', 'sklejka');
+        shadow.style.borderRadius = '0';
+
+        if (shape === 'circle') {
+            overlayContainer.classList.add('circle');
+            shadow.style.borderRadius = '50%';
+        } else if (shape === 'sklejka') {
+            overlayContainer.classList.add('sklejka');
+            overlayContainer.style.width = '50%';
+            overlayContainer.style.height = '100%';
+            overlayContainer.style.left = '0';
+            overlayContainer.style.top = '0';
+            overlayContainer.style.transform = `rotate(${overlayRotation}deg)`;
+            shadow.style.borderRadius = '0'; // Dodane, aby cień zmieniał się na kwadratowy
+        } else {
+            overlayContainer.classList.add('square');
+        }
+        updateShadow();
+    });
+});
+
