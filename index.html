@@ -2,12 +2,11 @@
 <html lang="pl">  
 <head>  
    <meta charset="UTF-8">  
+   <meta name="apple-mobile-web-app-capable" content="yes">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
    <title>SklejkaMaker</title>  
    <link rel="stylesheet" href="style.css">  
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.0.0-rc.7/html2canvas.min.js"></script>
-
-   
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>  
 </head>  
 <body>  
    <div class="controls">  
@@ -15,6 +14,8 @@
         <button class="btn active" data-shape="circle">Koło</button>  
         <button class="btn" data-shape="square">Kwadrat</button>
         <button class="btn" data-shape="sklejka">Sklejka</button>  
+		<button class="btn" data-shape="skos">Sklejka Skos</button>
+
       </div>  
   
       <div class="control-group">  
@@ -105,8 +106,7 @@
       <div id="shadow"></div>  
       <div id="overlayContainer" class="circle">  
         <img id="overlayImage" alt="Nakładka" style="aspect-ratio: 1/1;">  
-        <div class="resize-handle"></div>  
-      </div>  
+             </div>  
    </div>  
   
    <div class="save-options">  
@@ -115,7 +115,8 @@
    </div>  
 
    <div style="text-align: right; font-size: 12px; color: #666; margin-top: 12px; font-family: Arial, sans-serif;">
-    SklejkaMaker by Robert VER MAC 1.999999
+    SklejkaMaker by Robert VER 1.99
+   <br>Dodano obsługę sklejki skośnej, usunięto artefakt przy nakładce
     <br>
     <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Faiidiot.github.io%2Fnakladka&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=visits&edge_flat=false"/>
    </div>
