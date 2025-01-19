@@ -403,6 +403,8 @@ document.getElementById('copyToClipboardBtn').addEventListener('click', function
             alert('Skopiowano do schowka! Możesz teraz wkleić obraz w dowolnym programie graficznym.');
         } catch(err) {
             console.error('Błąd kopiowania do schowka:', err);
+                        alert('Sukces! UŻYJ PRZYCISKU "Zapisz jako..."');
+
             
         }
     })
