@@ -1,127 +1,50 @@
-// Główne zmienne do obsługi obrazów
-let mainImage = null; // Obraz główny
-let overlayImage = null; // Obraz nakładki
-let overlayContainer = null; // Kontener nakładki
+document.getElementById('saveAsBtn').addEventListener('click', function () {
+    const editorContainer = document.getElementById('editorContainer');
 
-// Funkcja do inicjalizacji elementów
-function initialize() {
-    mainImage = document.getElementById('mainImage');
-    overlayImage = document.getElementById('overlayImage');
-    overlayContainer = document.getElementById('overlayContainer');
+    // Wymuszamy format pliku PNG
+    domtoimage.toBlob(editorContainer, {
+        quality: 1,
+        bgcolor: '#fff',
+        format: 'png' // Wymuszamy zapis jako PNG
+    })
+        .then(function (blob) {
+            // Tworzymy poprawny obiekt Blob z określonym typem MIME
+            const imageBlob = new Blob([blob], { type: 'image/png' });
+            const date = new Date();
+            const timestamp =
+                date.getFullYear() +
+                ('0' + (date.getMonth() + 1)).slice(-2) +
+                ('0' + date.getDate()).slice(-2) +
+                '_' +
+                ('0' + date.getHours()).slice(-2) +
+                ('0' + date.getMinutes()).slice(-2);
+            const filename = `Sklejka_${timestamp}.png`;
 
-    // Obsługa ładowania obrazów
-    document.getElementById('mainImageInput').addEventListener('change', (e) => loadImage(e.target, mainImage));
-    document.getElementById('overlayImageInput').addEventListener('change', (e) => loadImage(e.target, overlayImage));
-
-    // Obsługa zapisu obrazu
-    document.getElementById('saveButton').addEventListener('click', saveImage);
-}
-
-// Poprawiona wersja kodu - ładowanie obrazów i zapis plików
-
-// Funkcja do wczytywania obrazów do odpowiednich elementów <img>
-function loadImage(event, imgElementId) {
-    const input = event.target;
-    const file = input.files[0];
-
-    if (file) {
-        const reader = new FileReader();
-
-        reader.onload = function (e) {
-            const imgElement = document.getElementById(imgElementId);
-            imgElement.src = e.target.result;
-            imgElement.style.display = 'block'; // Upewnij się, że obraz jest widoczny po wczytaniu
-        };
-
-        reader.readAsDataURL(file); // Wczytaj obraz jako Data URL
-    } else {
-        alert('Nie wybrano pliku obrazu!');
-    }
-}
-
-// Funkcja do zapisu połączonego obrazu jako pliku
-function saveImage() {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-
-    // Pobierz elementy obrazów
-    const mainImage = document.getElementById('mainImage');
-    const overlayImage = document.getElementById('overlayImage');
-
-    // Sprawdź, czy obrazy są załadowane
-    if (!mainImage.src || !overlayImage.src) {
-        alert('Upewnij się, że oba obrazy zostały wczytane.');
-        return;
-    }
-
-    // Ustaw wymiary canvasa na rozmiary głównego obrazu
-    canvas.width = mainImage.naturalWidth;
-    canvas.height = mainImage.naturalHeight;
-
-    // Narysuj główny obraz
-    context.drawImage(mainImage, 0, 0);
-
-    // Narysuj obraz nakładki w odpowiednim miejscu
-    const overlayRect = overlayImage.getBoundingClientRect();
-    const mainRect = mainImage.getBoundingClientRect();
-
-    const scale = mainImage.naturalWidth / mainRect.width;
-
-    const x = (overlayRect.left - mainRect.left) * scale;
-    const y = (overlayRect.top - mainRect.top) * scale;
-    const width = overlayRect.width * scale;
-    const height = overlayRect.height * scale;
-
-    context.drawImage(overlayImage, x, y, width, height);
-
-    // Zapisz wynik jako plik
-    const link = document.createElement('a');
-    link.download = 'combined_image.jpg';
-    link.href = canvas.toDataURL('image/jpeg');
-    link.click();
-}
-
-// Podpięcie zdarzeń do elementów po załadowaniu DOM
-window.onload = function () {
-    document.getElementById('mainImageInput').addEventListener('change', (e) => loadImage(e, 'mainImage'));
-    document.getElementById('overlayImageInput').addEventListener('change', (e) => loadImage(e, 'overlayImage'));
-    document.getElementById('saveButton').addEventListener('click', saveImage);
-};
-
-
-    // Rozmiary obrazu głównego
-    canvas.width = mainImage.naturalWidth;
-    canvas.height = mainImage.naturalHeight;
-
-    // Rysowanie obrazu głównego
-    context.drawImage(mainImage, 0, 0, canvas.width, canvas.height);
-
-    // Dodanie nakładki, jeśli istnieje
-    if (overlayImage && overlayImage.src) {
-        const overlayDimensions = overlayContainer.getBoundingClientRect();
-        const mainDimensions = mainImage.getBoundingClientRect();
-
-        const offsetX = overlayDimensions.left - mainDimensions.left;
-        const offsetY = overlayDimensions.top - mainDimensions.top;
-
-        const scale = mainImage.naturalWidth / mainDimensions.width;
-
-        context.drawImage(
-            overlayImage,
-            offsetX * scale,
-            offsetY * scale,
-            overlayDimensions.width * scale,
-            overlayDimensions.height * scale
-        );
-    }
-
-    // Zapis obrazu jako plik
-    const dataURL = canvas.toDataURL('image/jpeg');
-    const a = document.createElement('a');
-    a.href = dataURL;
-    a.download = 'finalImage.jpg';
-    a.click();
-}
-
-// Inicjalizacja po załadowaniu strony
-document.addEventListener('DOMContentLoaded', initialize);
+            if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+                // Specjalna obsługa dla systemów Apple
+                const url = URL.createObjectURL(imageBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.type = 'image/png'; // Wymuszamy typ MIME
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            } else {
+                // Standardowa obsługa dla innych systemów
+                const url = URL.createObjectURL(imageBlob);
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+            }
+        })
+        .catch(function (error) {
+            console.error('Błąd podczas zapisywania:', error);
+            alert('Wystąpił błąd podczas zapisywania zdjęcia.');
+        });
+});
