@@ -4,8 +4,8 @@ let overlayStartX, overlayStartY;
 let mainImageOffset = { x: 0, y: 0 };  
 let mainImageScale = 1;  
 let overlayImageScale = 1;  
-let overlayRotation = 0; // Dodane dla funkcji obracania
-
+let overlayRotation = 0;  
+  
 // Elementy DOM  
 const overlayContainer = document.getElementById('overlayContainer');  
 const mainImage = document.getElementById('mainImage');  
@@ -15,11 +15,7 @@ const shadow = document.getElementById('shadow');
 // Funkcja ładująca szablony do selecta
 function loadSavedTemplates() {
     const select = document.getElementById('templateSelect');
-    
-    // Wyczyść select
     select.innerHTML = '';
-    
-    // Przeszukaj localStorage i dodaj wszystkie znalezione szablony
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key.startsWith('template_')) {
@@ -30,7 +26,40 @@ function loadSavedTemplates() {
     }
 }
 
-// Obsługa przycisków kolorów  
+// Funkcja aktualizacji cienia  
+function updateShadow() {  
+   const overlay = document.getElementById('overlayContainer');  
+   const shadow = document.getElementById('shadow');  
+   const borderWidth = parseInt(getComputedStyle(overlay).borderWidth);  
+    
+   shadow.style.width = (overlay.offsetWidth + borderWidth * 2) + 'px';  
+   shadow.style.height = (overlay.offsetHeight + borderWidth * 2) + 'px';  
+   shadow.style.left = (overlay.offsetLeft - borderWidth) + 'px';  
+   shadow.style.top = (overlay.offsetTop - borderWidth) + 'px';
+   shadow.style.backgroundColor = 'rgba(0, 0, 0, 0.66)';
+   shadow.style.filter = 'blur(10px)';
+   
+   if (overlayContainer.classList.contains('sklejka')) {
+       shadow.classList.add('sklejka');
+       shadow.classList.remove('skos');
+   } else if (overlayContainer.classList.contains('skos')) {
+       shadow.classList.add('skos');
+       shadow.classList.remove('sklejka');
+   } else {
+       shadow.classList.remove('sklejka', 'skos');
+   }
+}
+
+function updateMainImagePosition() {  
+   mainImage.style.transform = `translate(calc(-50% + ${mainImageOffset.x}px), calc(-50% + ${mainImageOffset.y}px)) scale(${mainImageScale})`;  
+}
+
+function updateOverlayRotation() {
+    if (!overlayContainer.classList.contains('skos')) {
+        overlayContainer.style.transform = `rotate(${overlayRotation}deg)`;
+    }
+}
+ // Obsługa przycisków kolorów  
 document.querySelectorAll('.color-btn').forEach(btn => {  
    btn.addEventListener('click', function() {  
       const color = this.dataset.color;  
@@ -38,6 +67,21 @@ document.querySelectorAll('.color-btn').forEach(btn => {
       document.getElementById('borderColor').value = color;  
    });  
 });  
+
+// Obsługa obrotu nakładki
+document.getElementById('rotationAngle').addEventListener('input', function(e) {
+    overlayRotation = parseInt(e.target.value);
+    document.getElementById('rotationAngleInput').value = overlayRotation;
+    updateOverlayRotation();
+    updateShadow();
+});
+
+document.getElementById('rotationAngleInput').addEventListener('input', function(e) {
+    overlayRotation = parseInt(e.target.value);
+    document.getElementById('rotationAngle').value = overlayRotation;
+    updateOverlayRotation();
+    updateShadow();
+});
   
 // Obsługa przeciągania nakładki  
 overlayContainer.addEventListener('mousedown', function(e) {  
@@ -80,12 +124,10 @@ document.querySelectorAll('#mainImageNav .arrow').forEach(arrow => {
       }  
       updateMainImagePosition();  
    });  
-});  
-  
+});
 // Obsługa strzałek dla nakładki  
 document.querySelectorAll('#overlayImageNav .arrow').forEach(arrow => {  
    arrow.addEventListener('click', function() {  
-      const overlayImage = document.getElementById('overlayImage');  
       const direction = this.classList[1];  
       const transform = window.getComputedStyle(overlayImage).transform;  
       const matrix = new DOMMatrix(transform);  
@@ -105,10 +147,6 @@ document.querySelectorAll('#overlayImageNav .arrow').forEach(arrow => {
    });  
 });  
   
-function updateMainImagePosition() {  
-   mainImage.style.transform = `translate(calc(-50% + ${mainImageOffset.x}px), calc(-50% + ${mainImageOffset.y}px)) scale(${mainImageScale})`;  
-}  
-  
 // Obsługa skalowania  
 document.getElementById('mainImageScale').addEventListener('input', function(e) {  
    mainImageScale = e.target.value / 100;  
@@ -126,8 +164,10 @@ document.getElementById('overlayImageScale').addEventListener('input', function(
 function updateOverlaySize(value) {  
    document.getElementById('overlaySize').value = value;  
    document.getElementById('overlaySizeInput').value = value;  
-   overlayContainer.style.width = value + 'px';  
-   overlayContainer.style.height = value + 'px';  
+   if (!overlayContainer.classList.contains('sklejka') && !overlayContainer.classList.contains('skos')) {
+       overlayContainer.style.width = value + 'px';  
+       overlayContainer.style.height = value + 'px';  
+   }
    updateShadow();  
 }  
   
@@ -157,20 +197,6 @@ document.getElementById('shadowToggle').addEventListener('change', function(e) {
    }  
 });
 
-// Funkcja aktualizacji cienia  
-function updateShadow() {  
-   const overlay = document.getElementById('overlayContainer');  
-   const shadow = document.getElementById('shadow');  
-   const borderWidth = parseInt(getComputedStyle(overlay).borderWidth);  
-    
-   shadow.style.width = (overlay.offsetWidth + borderWidth * 2) + 'px';  
-   shadow.style.height = (overlay.offsetHeight + borderWidth * 2) + 'px';  
-   shadow.style.left = (overlay.offsetLeft - borderWidth) + 'px';  
-   shadow.style.top = (overlay.offsetTop - borderWidth) + 'px';
-   shadow.style.backgroundColor = 'rgba(0, 0, 0, 0.66)';
-   shadow.style.filter = 'blur(10px)';
-}  
-  
 // Obsługa kształtu nakładki  
 document.querySelectorAll('[data-shape]').forEach(btn => {  
    btn.addEventListener('click', function() {
@@ -180,31 +206,44 @@ document.querySelectorAll('[data-shape]').forEach(btn => {
       this.classList.add('active');
       
       const shape = this.dataset.shape;  
+      // Reset wszystkich transformacji i klas
+      overlayContainer.classList.remove('circle', 'square', 'sklejka', 'skos');
+      overlayContainer.style.transform = 'none';
+      shadow.style.transform = 'none';
+      overlayImage.style.transform = 'none';
+      
       if (shape === 'circle') {  
         overlayContainer.classList.add('circle');  
-        overlayContainer.classList.remove('square');  
-        shadow.style.borderRadius = '50%';  
+        shadow.style.borderRadius = '50%';
+        updateOverlayRotation();
       } else if (shape === 'square') {  
         overlayContainer.classList.add('square');  
-        overlayContainer.classList.remove('circle');  
-        shadow.style.borderRadius = '0';  
+        shadow.style.borderRadius = '0';
+        updateOverlayRotation();
       } else if (shape === 'sklejka') {
         overlayContainer.classList.add('sklejka');
         overlayContainer.style.width = '50%';
         overlayContainer.style.height = '100%';
         overlayContainer.style.left = '0';
         overlayContainer.style.top = '0';
-        overlayContainer.style.transform = `rotate(${overlayRotation}deg)`;
+        updateOverlayRotation();
+      } else if (shape === 'skos') {
+        overlayContainer.classList.add('skos');
+        shadow.style.borderRadius = '0';
+        overlayContainer.style.width = '50%';
+        overlayContainer.style.height = '100%';
+        overlayContainer.style.top = '0';
+        overlayContainer.style.left = '0';
       }
       updateShadow();
    });  
-});  
+});
   
 // Autodopasowanie zdjęcia  
 document.getElementById('autoFitBtn').addEventListener('click', function() {  
    mainImageOffset = { x: 0, y: 0 };  
    mainImageScale = 1;  
-     document.getElementById('mainImageScale').value = 100;  
+   document.getElementById('mainImageScale').value = 100;  
    mainImage.style.width = '100%';  
    mainImage.style.height = '100%';  
    mainImage.style.objectFit = 'contain';  
@@ -215,11 +254,16 @@ document.getElementById('autoFitBtn').addEventListener('click', function() {
 document.getElementById('mainImageInput').addEventListener('change', function(e) {  
    const file = e.target.files[0];  
    if (file) {  
+      // Sprawdź i wymusz odpowiedni typ MIME
+      const imageType = file.type || 'image/jpeg';  // Domyślny typ jeśli nie jest określony
+      
       const reader = new FileReader();  
       reader.onload = function(e) {  
         mainImage.src = e.target.result;  
         mainImage.style.display = 'block';  
-        // Automatyczne dopasowanie po załadowaniu
+        // Dodajemy atrybut type
+        mainImage.setAttribute('type', imageType);
+        
         mainImage.onload = function() {
             mainImageOffset = { x: 0, y: 0 };  
             mainImageScale = 1;  
@@ -247,8 +291,7 @@ document.getElementById('overlayImageInput').addEventListener('change', function
       };  
       reader.readAsDataURL(file);  
    }  
-});  
-
+});
 // Funkcje obsługi szablonów
 function getCurrentSettings() {
     return {
@@ -305,10 +348,57 @@ function applySettings(settings) {
     updateShadow();
 }
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.0.0-rc.7/html2canvas.min.js"></script>
+// Zapisz jako...  
+document.getElementById('saveAsBtn').addEventListener('click', function() {
+    const editorContainer = document.getElementById('editorContainer');
+    
+    domtoimage.toPng(editorContainer, {
+        quality: 1,
+        bgcolor: '#fff',
+    })
+  .then(function(dataUrl) {
+    const date = new Date();
+    const timestamp = date.getFullYear() + 
+                     ('0' + (date.getMonth()+1)).slice(-2) + 
+                     ('0' + date.getDate()).slice(-2) + '_' +
+                     ('0' + date.getHours()).slice(-2) + 
+                     ('0' + date.getMinutes()).slice(-2);
+    const filename = 'Sklejka_' + timestamp + '.png';
+    
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
+})
+    .catch(function(error) {
+        console.error('Błąd podczas zapisywania:', error);
+       alert('Wystąpił błąd podczas zapisywania zdjęcia.');
+    });
+});
 
-
-
+// Kopiuj do schowka
+document.getElementById('copyToClipboardBtn').addEventListener('click', function() {
+    const editorContainer = document.getElementById('editorContainer');
+    
+    domtoimage.toBlob(editorContainer, {
+        quality: 1,
+        bgcolor: '#fff',
+    })
+    .then(async function(blob) {
+        try {
+            const item = new ClipboardItem({ 'image/png': blob });
+            await navigator.clipboard.write([item]);
+            alert('Skopiowano do schowka! Możesz teraz wkleić obraz w dowolnym programie graficznym.');
+        } catch(err) {
+            console.error('Błąd kopiowania do schowka:', err);
+            alert('Nie udało się skopiować do schowka. Spróbuj użyć przycisku "Zapisz jako..."');
+        }
+    })
+    .catch(function(error) {
+        console.error('Błąd podczas tworzenia obrazu:', error);
+        alert('Wystąpił błąd podczas kopiowania do schowka.');
+    });
+});
 
 // Wczytywanie szablonu
 document.getElementById('loadTemplateBtn').addEventListener('click', function() {
@@ -431,4 +521,3 @@ document.querySelectorAll('[data-shape]').forEach(btn => {
         updateShadow();
     });
 });
-
