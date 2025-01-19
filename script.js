@@ -17,26 +17,77 @@ function initialize() {
     document.getElementById('saveButton').addEventListener('click', saveImage);
 }
 
-// Ładowanie obrazów
-function loadImage(inputElement, targetImage) {
-    const file = inputElement.files[0];
-    if (!file) {
-        alert('Nie wybrano pliku.');
-        return;
-    }
+// Poprawiona wersja kodu - ładowanie obrazów i zapis plików
 
-    const reader = new FileReader();
-    reader.onload = function (event) {
-        targetImage.src = event.target.result; // Ustawienie źródła obrazu na wynik wczytywania
-        targetImage.style.display = 'block'; // Wyświetlenie obrazu na ekranie
-    };
-    reader.readAsDataURL(file); // Odczytanie pliku jako Data URL
+// Funkcja do wczytywania obrazów do odpowiednich elementów <img>
+function loadImage(event, imgElementId) {
+    const input = event.target;
+    const file = input.files[0];
+
+    if (file) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            const imgElement = document.getElementById(imgElementId);
+            imgElement.src = e.target.result;
+            imgElement.style.display = 'block'; // Upewnij się, że obraz jest widoczny po wczytaniu
+        };
+
+        reader.readAsDataURL(file); // Wczytaj obraz jako Data URL
+    } else {
+        alert('Nie wybrano pliku obrazu!');
+    }
 }
 
-// Funkcja zapisu obrazu
+// Funkcja do zapisu połączonego obrazu jako pliku
 function saveImage() {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
+
+    // Pobierz elementy obrazów
+    const mainImage = document.getElementById('mainImage');
+    const overlayImage = document.getElementById('overlayImage');
+
+    // Sprawdź, czy obrazy są załadowane
+    if (!mainImage.src || !overlayImage.src) {
+        alert('Upewnij się, że oba obrazy zostały wczytane.');
+        return;
+    }
+
+    // Ustaw wymiary canvasa na rozmiary głównego obrazu
+    canvas.width = mainImage.naturalWidth;
+    canvas.height = mainImage.naturalHeight;
+
+    // Narysuj główny obraz
+    context.drawImage(mainImage, 0, 0);
+
+    // Narysuj obraz nakładki w odpowiednim miejscu
+    const overlayRect = overlayImage.getBoundingClientRect();
+    const mainRect = mainImage.getBoundingClientRect();
+
+    const scale = mainImage.naturalWidth / mainRect.width;
+
+    const x = (overlayRect.left - mainRect.left) * scale;
+    const y = (overlayRect.top - mainRect.top) * scale;
+    const width = overlayRect.width * scale;
+    const height = overlayRect.height * scale;
+
+    context.drawImage(overlayImage, x, y, width, height);
+
+    // Zapisz wynik jako plik
+    const link = document.createElement('a');
+    link.download = 'combined_image.jpg';
+    link.href = canvas.toDataURL('image/jpeg');
+    link.click();
+}
+
+// Podpięcie zdarzeń do elementów po załadowaniu DOM
+window.onload = function () {
+    document.getElementById('mainImageInput').addEventListener('change', (e) => loadImage(e, 'mainImage'));
+    document.getElementById('overlayImageInput').addEventListener('change', (e) => loadImage(e, 'overlayImage'));
+    document.getElementById('saveButton').addEventListener('click', saveImage);
+};
+
 
     // Rozmiary obrazu głównego
     canvas.width = mainImage.naturalWidth;
